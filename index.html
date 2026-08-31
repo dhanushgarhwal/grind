@@ -23,41 +23,38 @@
 <!-- Babel standalone: lets the browser run JSX directly, no build step -->
 <script src="https://cdn.jsdelivr.net/npm/@babel/standalone/babel.min.js"></script>
 
-<!-- Firebase (free tier — Firestore for cross-device sync) -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
-  import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
-
+<!-- Firebase (compat builds: classic scripts, no ES-module imports) -->
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+<script>
   window.__firebaseReady = false;
   window.__firebaseError = null;
 
-  // ============================================================
-  // ⚙️ PASTE YOUR FIREBASE CONFIG HERE (see setup guide below the app)
-  // ============================================================
-const firebaseConfig = {
-  apiKey: "AIzaSyDKBCLzj6QKaj6TAGQfXmCIvOB-AeDG7-A",
-  authDomain: "grind-dg.firebaseapp.com",
-  projectId: "grind-dg",
-  storageBucket: "grind-dg.firebasestorage.app",
-  messagingSenderId: "158652293929",
-  appId: "1:158652293929:web:5661ae75ce90ab8dba0d38"
-};
-  // ============================================================
+  const firebaseConfig = {
+    apiKey: "AIzaSyDKBCLzj6QKaj6TAGQfXmCIvOB-AeDG7-A",
+    authDomain: "grind-dg.firebaseapp.com",
+    projectId: "grind-dg",
+    storageBucket: "grind-dg.firebasestorage.app",
+    messagingSenderId: "158652293929",
+    appId: "1:158652293929:web:5661ae75ce90ab8dba0d38"
+  };
 
-  window.__firebaseConfigured = firebaseConfig.apiKey !== "PASTE_YOUR_API_KEY_HERE";
+  window.__firebaseConfigured = !!firebaseConfig.apiKey && firebaseConfig.apiKey !== "PASTE_YOUR_API_KEY_HERE";
 
   if (window.__firebaseConfigured) {
     try {
-      const app = initializeApp(firebaseConfig);
-      const db = getFirestore(app);
+      const app = firebase.initializeApp(firebaseConfig);
+      const db = firebase.firestore(app);
       window.__db = db;
-      window.__fsDoc = doc;
-      window.__fsGetDoc = getDoc;
-      window.__fsSetDoc = setDoc;
-      window.__fsOnSnapshot = onSnapshot;
+      window.__fsDoc = function(dbInstance, collectionName, docId) {
+        return dbInstance.collection(collectionName).doc(docId);
+      };
+      window.__fsGetDoc = function(ref) { return ref.get(); };
+      window.__fsSetDoc = function(ref, data) { return ref.set(data); };
+      window.__fsOnSnapshot = function(ref, next, error) { return ref.onSnapshot(next, error); };
       window.__firebaseReady = true;
     } catch (e) {
-      window.__firebaseError = e.message;
+      window.__firebaseError = e && e.message ? e.message : String(e);
       console.error("Firebase init failed:", e);
     }
   }
@@ -178,7 +175,7 @@ function useProgressStore() {
     const ref = __fsDoc(__db, "grind_progress", syncCode);
 
     __fsGetDoc(ref).then(snap => {
-      if (snap.exists()) {
+      if (snap.exists) {
         const data = snap.data();
         setState(s => ({ ...s, doneDays: data.doneDays || {}, resources: data.resources || {}, flags: data.flags || {}, ready: true }));
       } else {
@@ -187,7 +184,7 @@ function useProgressStore() {
 
       const unsub = __fsOnSnapshot(ref, (snap2) => {
         if (skipNextSnapshot.current) { skipNextSnapshot.current = false; return; }
-        if (snap2.exists()) {
+        if (snap2.exists) {
           const data = snap2.data();
           setState(s => ({ ...s, doneDays: data.doneDays || {}, resources: data.resources || {}, flags: data.flags || {}, ready: true }));
         }
@@ -970,15 +967,17 @@ root.render(<Root />);
 
 </script>
 
-<!-- Compile the JSX manually. This avoids Babel standalone's automatic
-     transformScriptTags() pass, which can fail on GitHub Pages. -->
+<!-- Compile the JSX manually. The Firebase SDK above uses classic compat scripts,
+     so no ES-module import statement can leak into this compiled app. -->
 <script>
 (function () {
   function startApp() {
     try {
       const source = document.getElementById("grind-app-source").textContent;
+      if (!window.Babel) throw new Error("Babel failed to load");
       const compiled = Babel.transform(source, {
-        presets: ["react"],
+        presets: [["react", { runtime: "classic" }]],
+        sourceType: "script",
         filename: "grind-app.jsx"
       }).code;
       // Execute the compiled app directly instead of dynamically appending a
