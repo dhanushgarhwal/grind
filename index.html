@@ -981,9 +981,10 @@ root.render(<Root />);
         presets: ["react"],
         filename: "grind-app.jsx"
       }).code;
-      const appScript = document.createElement("script");
-      appScript.text = compiled;
-      document.body.appendChild(appScript);
+      // Execute the compiled app directly instead of dynamically appending a
+      // <script> element. Some browsers/DevTools contexts reject dynamically
+      // appended inline scripts, which was causing the blank page.
+      new Function(compiled)();
     } catch (err) {
       console.error("GRIND app startup failed:", err);
       const root = document.getElementById("root");
