@@ -648,14 +648,27 @@ function GrindTracker() {
 
   const projectFinish = useCallback((subj) => {
     const sessions = studyDays.filter(e => e.subject === subj);
-    const last = sessions[sessions.length - 1];
-    // Intentionally session-based: every session completed ahead of its planned date
-    // moves the finish by exactly one day earlier; every overdue uncompleted session
-    // adds exactly one day. This prevents one checkbox from causing huge jumps.
+    const lastIndex = sessions.length - 1;
+    const last = sessions[lastIndex];
+    // Session-based: every session completed ahead of its planned date moves the
+    // finish one SESSION earlier; every overdue uncompleted session moves it one
+    // session later. The projected date is anchored to this subject's own real
+    // session list (sessions[lastIndex - ahead]) instead of last.date -
+    // ahead*86400000, because lectures for one subject aren't exactly 1 real day
+    // apart (other subjects rotate in between) — flat day-arithmetic could land
+    // on a date that isn't even one of this subject's sessions.
     const ahead = sessions.filter(e => e.date > TODAY && state.doneDays[e.date]).length;
     const missed = sessions.filter(e => e.date < TODAY && !state.doneDays[e.date]).length;
-    const delta = missed - ahead;
-    const projDate = new Date(parseISO(last.date).getTime() + delta * 86400000);
+    const earlyIndex = Math.max(lastIndex - ahead, 0);
+    const isEarly = missed <= ahead && ahead > 0;
+    const projDate = isEarly
+      ? parseISO(sessions[earlyIndex].date)
+      : new Date(parseISO(last.date).getTime() + missed * 86400000);
+    // delta is the real number of calendar days between the projected date and
+    // the originally-scheduled last date — NOT the session count — so the "Xd
+    // early / Xd late" label matches how far the date actually moved. With
+    // sessions several real days apart, 1 session early can be 3-10+ real days.
+    const delta = Math.round((projDate.getTime() - parseISO(last.date).getTime()) / 86400000);
     let status = "exact";
     if (delta < 0) status = "early";
     else if (delta > 0) status = "late";
