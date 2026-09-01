@@ -157,6 +157,95 @@ const RESOURCE_TYPES = [
   { key: "ncert", label: "NCERT", short: "NCT" },
   { key: "qcb", label: "QCB", short: "QCB" },
 ];
+const CHAPTER_LINKS = {
+  "Chemistry": {
+    "Solutions": "https://www.pw.live/watch/?categoryId=68d4e9cdd33e57857476ab1c&vType=OTT&type=penpencilvdo&childId=69688b2ec17f7ff7ac49caa5",
+    "Electrochemistry": "https://www.pw.live/watch/?categoryId=68d4e9cdd33e57857476ab1c&vType=OTT&type=penpencilvdo&childId=69688b4ec17f7ff7ac49cac2",
+    "Chemical Kinetics": "https://www.pw.live/watch/?categoryId=68d4e9cdd33e57857476ab1c&vType=OTT&type=penpencilvdo&childId=69688b81c17f7ff7ac49caf4",
+    "D and F Block Elements": "https://www.pw.live/watch/?categoryId=68d4e9cdd33e57857476ab1c&vType=OTT&type=penpencilvdo&childId=69688b45c17f7ff7ac49cab9",
+    "Coordination Compounds": "https://www.pw.live/watch/?categoryId=68d4e9cdd33e57857476ab1c&vType=OTT&type=penpencilvdo&childId=69688b39c17f7ff7ac49cab0",
+    "Haloalkanes and Haloarenes": "https://www.pw.live/watch/?categoryId=68d4e9cdd33e57857476ab1c&vType=OTT&type=penpencilvdo&childId=69688b5fc17f7ff7ac49cacd",
+    "Alcohols, Phenols and Ethers": "https://www.pw.live/watch/?categoryId=68d4e9cdd33e57857476ab1c&vType=OTT&type=penpencilvdo&childId=69688b55c17f7ff7ac49cac8",
+    "Aldehydes, Ketones and Carboxylic Acids": "https://www.pw.live/watch/?categoryId=68d4e9cdd33e57857476ab1c&vType=OTT&type=penpencilvdo&childId=69688b76c17f7ff7ac49caea",
+    "Amines": "https://www.pw.live/watch/?categoryId=68d4e9cdd33e57857476ab1c&vType=OTT&type=penpencilvdo&childId=69688b67c17f7ff7ac49cadd",
+    "Biomolecules": "https://www.pw.live/watch/?categoryId=68d4e9cdd33e57857476ab1c&vType=OTT&type=penpencilvdo&childId=69688b6fc17f7ff7ac49cae7"
+  },
+  "Physics": {
+    "Electric Charges And Fields": "https://www.youtube.com/watch?v=oROKtbRr8R0&list=PL0QsfTI0en3hqxgxrJtiVEjh3QN9eq3Lz&index=1&t=4857s",
+    "Electrostatic Potential and Capacitance": "https://www.youtube.com/watch?v=IhJSYCxnfRY&list=PL0QsfTI0en3hqxgxrJtiVEjh3QN9eq3Lz&index=2",
+    "Current Electricity": "https://www.youtube.com/watch?v=t-yynBAts_I&list=PL0QsfTI0en3hqxgxrJtiVEjh3QN9eq3Lz&index=3",
+    "Moving Charges and Magnetism": "https://www.youtube.com/watch?v=HzJJPawIeAY&list=PL0QsfTI0en3hqxgxrJtiVEjh3QN9eq3Lz&index=4",
+    "Magnetism and Matter": "https://www.youtube.com/watch?v=bQOjV6MvLKI&list=PL0QsfTI0en3hqxgxrJtiVEjh3QN9eq3Lz&index=5",
+    "Electromagnetic Induction": "https://www.youtube.com/watch?v=aTjbtdSDCj4&list=PL0QsfTI0en3hqxgxrJtiVEjh3QN9eq3Lz&index=6",
+    "Alternating Current": "https://www.youtube.com/watch?v=-1hsgRyikUI&list=PL0QsfTI0en3hqxgxrJtiVEjh3QN9eq3Lz&index=7",
+    "Electromagnetic Waves": "https://www.youtube.com/watch?v=VGIDY7xj3Bw&list=PL0QsfTI0en3hqxgxrJtiVEjh3QN9eq3Lz&index=8",
+    "Ray Optics and Optical Instruments": "https://www.youtube.com/watch?v=n6ciKPywK5A&list=PL0QsfTI0en3hqxgxrJtiVEjh3QN9eq3Lz&index=9",
+    "Wave Optics": "https://www.youtube.com/watch?v=UBm9vtHh8U4&list=PL0QsfTI0en3hqxgxrJtiVEjh3QN9eq3Lz&index=10",
+    "Dual Nature of Radiation and Matter": "https://www.youtube.com/watch?v=y96vJ5HY6Os&list=PL0QsfTI0en3hqxgxrJtiVEjh3QN9eq3Lz&index=11",
+    "Atoms and Nuclei": "https://www.youtube.com/watch?v=AObcy2Hq0GA&list=PL0QsfTI0en3hqxgxrJtiVEjh3QN9eq3Lz&index=12",
+    "Semiconductors": "https://www.youtube.com/watch?v=77NR5rNMpMk&list=PL0QsfTI0en3hqxgxrJtiVEjh3QN9eq3Lz&index=13"
+  },
+  "Maths": {
+    "Matrices": "https://www.pw.live/watch/?categoryId=68d4e9cdd33e57857476ab1c&vType=OTT&type=penpencilvdo&childId=6961435ec17f7ff7ac454ea2",
+    "Determinants": "https://www.pw.live/watch/?categoryId=68d4e9cdd33e57857476ab1c&vType=OTT&type=penpencilvdo&childId=69690bbac17f7ff7ac4a2777",
+    "Relations and Functions": "https://www.pw.live/watch/?categoryId=68d4e9cdd33e57857476ab1c&vType=OTT&type=penpencilvdo&childId=696c40b1c17f7ff7ac4babb4",
+    "Inverse Trigonometric Functions": "https://www.pw.live/watch/?categoryId=68d4e9cdd33e57857476ab1c&vType=OTT&type=penpencilvdo&childId=69711d9883cff5e7b2fd0a53",
+    "Continuity and Differentiability": "https://www.pw.live/watch/?categoryId=68d4e9cdd33e57857476ab1c&vType=OTT&type=penpencilvdo&childId=6976656583cff5e7b2ff4714",
+    "Application of Derivatives": "https://pw.live/watch/?categoryId=68d4e9cdd33e57857476ab1c&vType=OTT&type=penpencilvdo&childId=697933c899d3cc8df435b612",
+    "Integrals": "https://www.pw.live/watch/?categoryId=68d4e9cdd33e57857476ab1c&vType=OTT&type=penpencilvdo&childId=697e502099d3cc8df4379fab",
+    "Application of Integration": "https://www.pw.live/watch/?categoryId=68d4e9cdd33e57857476ab1c&vType=OTT&type=penpencilvdo&childId=698057b87cb59b711562ac70",
+    "Differential Equations": "https://www.pw.live/watch/?categoryId=68d4e9cdd33e57857476ab1c&vType=OTT&type=penpencilvdo&childId=698431c77cb59b71156400f8",
+    "Vector": "https://www.pw.live/watch/?categoryId=68d4e9cdd33e57857476ab1c&vType=OTT&type=penpencilvdo&childId=6987420d7bbbed7fd7211c8c",
+    "Three Dimensional Geometry": "https://www.pw.live/watch/?categoryId=68d4e9cdd33e57857476ab1c&vType=OTT&type=penpencilvdo&childId=6986e90b7bbbed7fd720f5c8",
+    "Linear Programming": "https://www.pw.live/watch/?categoryId=68d4e9cdd33e57857476ab1c&vType=OTT&type=penpencilvdo&childId=698789997bbbed7fd7213b05",
+    "Probability": "https://www.pw.live/watch/?categoryId=68d4e9cdd33e57857476ab1c&vType=OTT&type=penpencilvdo&childId=6988fa26166093d1a53c2c07"
+  }
+};
+// Notes PDF link per chapter. A chapter left out of its subject's map here
+// simply gets no Notes button — currently true for Chemistry's "Solutions"
+// and Maths' "Vector" since no notes have been uploaded for those yet.
+const NOTES_LINKS = {
+  "Chemistry": {
+    "Electrochemistry": "https://drive.google.com/file/d/1ENcnMvLUoRzpEfcai9X8FeV4kW4jnilK/preview",
+    "Chemical Kinetics": "https://drive.google.com/file/d/14YSSZhr6ByUz5NUzNQxaEUeWtLTDCpdA/preview",
+    "D and F Block Elements": "https://drive.google.com/file/d/1E8YzpGYDtgPZ0UTykKRy3FkIVVhQXsvP/preview",
+    "Coordination Compounds": "https://drive.google.com/file/d/1tZe2YtBjJdtcvI8inqX1WSn7XYLLRorQ/preview",
+    "Haloalkanes and Haloarenes": "https://drive.google.com/file/d/1e4D0MTtGi0wWqkMW5nmB7E49gR9HUAIf/preview",
+    "Alcohols, Phenols and Ethers": "https://drive.google.com/file/d/1fEPZogtcj5OK30CRRmFrForWuXwyfVK5/preview",
+    "Aldehydes, Ketones and Carboxylic Acids": "https://drive.google.com/file/d/1n-t16AosZ3at5zC6siXD4la9PHRTFURA/preview",
+    "Amines": "https://drive.google.com/file/d/1BOOP6WkMh8Y92IyoPGosrpIsbTZ_82eD/preview",
+    "Biomolecules": "https://drive.google.com/file/d/1DuM00FLYITgKm_MYtaC4hw2z0qBzZXuT/preview"
+  },
+  "Maths": {
+    "Matrices": "https://drive.google.com/file/d/1MlIyLFJ2YSzA-zh88i8s-Hxe7A_yM3k1/preview",
+    "Determinants": "https://drive.google.com/file/d/1vh7VacV_nBL5BjrNtQybhmapb35Ma8NG/preview",
+    "Relations and Functions": "https://drive.google.com/file/d/14CKe4f5R-CZQUa1uzUNYyqh8wJb-K7CN/preview",
+    "Inverse Trigonometric Functions": "https://drive.google.com/file/d/1_gCsjT6JiehMh5A68nCC4ZDn4hfoejK-/preview",
+    "Continuity and Differentiability": "https://drive.google.com/file/d/1Ehep-BMxm7ToJju-BePdY6pXium7qlVw/preview",
+    "Application of Derivatives": "https://drive.google.com/file/d/1463f65NJCNW0Iz0ZK-4shaiOE7feEiFC/preview",
+    "Integrals": "https://drive.google.com/file/d/1R7xYOdeuGwQqfy6o3wPAryy0moDnNMxL/preview",
+    "Application of Integration": "https://drive.google.com/file/d/1n-8BrjoGbslaXVTgMci_irubRh_3eBJx/preview",
+    "Differential Equations": "https://drive.google.com/file/d/1UyB0Z3yb-rpTXAIU8Oz3y1UtPzjY59wn/preview",
+    "Three Dimensional Geometry": "https://drive.google.com/file/d/1bFpdF5dnz_j1RoXbOpFGuA0ie5X1Ieig/preview",
+    "Linear Programming": "https://drive.google.com/file/d/1J7j2FxPjlH1SYLIa2wsTYv1hwgD3GURJ/preview",
+    "Probability": "https://drive.google.com/file/d/1q_9ASivBT-kWA148MGUvfF8ybocxL_Ye/preview"
+  },
+  "Physics": {
+    "Electric Charges And Fields": "https://drive.google.com/file/d/1L3zDfzP8Gm3B6xHqI4oQBAwlpTMAB_L1/preview",
+    "Electrostatic Potential and Capacitance": "https://drive.google.com/file/d/1I_nqCcrCANJPhDqenwnJAQIktslS1NH4/preview",
+    "Current Electricity": "https://drive.google.com/file/d/1MsjsOILSioA3nK39yc0Q-LMEozFdZITR/preview",
+    "Moving Charges and Magnetism": "https://drive.google.com/file/d/1y00NfZaDQncekMrTl_RJ5Vgi2pfHKVwt/preview",
+    "Magnetism and Matter": "https://drive.google.com/file/d/11kPmtLO7t9JI5PHZ9N_LJckEK--F3rk1/preview",
+    "Electromagnetic Induction": "https://drive.google.com/file/d/1yOztt_f3ioP5nV4DVF5KQqRBexDt3hzX/preview",
+    "Alternating Current": "https://drive.google.com/file/d/1NAWTLGFYnvJnrMRjoiOhUjx6olQFbcPS/preview",
+    "Electromagnetic Waves": "https://drive.google.com/file/d/11gX1QUWeiy6MiJabMn77lV6pq-Qr2EOH/preview",
+    "Ray Optics and Optical Instruments": "https://drive.google.com/file/d/153Vcq3msv9fYYmg6IqkhR41IAhVGihl_/preview",
+    "Wave Optics": "https://drive.google.com/file/d/1wynHh93mv6uIXQ47KMkKRvQ1PgDPqGEt/preview",
+    "Dual Nature of Radiation and Matter": "https://drive.google.com/file/d/1pu_GKhBmObNhu_U6hSUDWlsEH9rE6veW/preview",
+    "Atoms and Nuclei": "https://drive.google.com/file/d/1657PJz4qfdsHOQrb6jUn889zM098DQwG/preview",
+    "Semiconductors": "https://drive.google.com/file/d/153Ys41AMpwmfevyRQiICc70B0XMfgrLu/preview"
+  }
+};
 
 function todayISO() {
   const d = new Date();
@@ -539,9 +628,13 @@ function GrindTracker() {
 
 
   const expectedPct = useCallback((subj) => {
+    // Only sessions strictly before today count as "should already be done" — a
+    // session scheduled for today itself isn't overdue yet, it's in progress.
+    // This mirrors projectFinish's `missed` definition (e.date < TODAY) so the
+    // Subject Race and Time Machine never disagree about what's actually pending.
     const sessions = studyDays.filter(e => e.subject === subj);
     if (sessions.length === 0) return 0;
-    return sessions.filter(e => e.date <= TODAY).length / sessions.length;
+    return sessions.filter(e => e.date < TODAY).length / sessions.length;
   }, [studyDays]);
 
   const projectFinish = useCallback((subj) => {
@@ -615,6 +708,8 @@ function GrindTracker() {
         .gt-card:hover { transform: translateY(-2px); }
         .gt-pip { transition: all 0.15s ease; }
         .gt-pip:hover { transform: translateY(-1px); }
+        .gt-watch-btn { transition: all 0.15s ease; }
+        .gt-watch-btn:hover { transform: translateY(-1px); filter: brightness(1.15); }
         .gt-btn { transition: all 0.15s ease; }
         .gt-btn:hover { filter: brightness(1.15); transform: translateY(-1px); }
         .gt-btn:active { transform: translateY(0); }
@@ -630,9 +725,13 @@ function GrindTracker() {
         @media (max-width: 600px) {
           .gt-topbar { flex-direction: column; align-items: flex-start !important; }
           .gt-stats { grid-template-columns: repeat(2, 1fr) !important; }
-          .gt-hero-actions { flex-direction: column; }
-          .gt-hero-actions button { width: 100%; }
+          .gt-hero-actions { flex-direction: column; width: 100%; }
+          .gt-hero-actions button, .gt-hero-actions a { width: 100%; }
           .gt-heatmap { grid-template-columns: repeat(10, 1fr) !important; }
+          .gt-hero-top { flex-direction: column; }
+          .gt-hero-row { flex-direction: column; align-items: stretch !important; }
+          .gt-hero-media-btns { flex-direction: row !important; width: 100%; }
+          .gt-watch-square { width: 100% !important; height: 72px !important; flex-direction: row !important; border-radius: 14px !important; }
         }
       `}</style>
 
@@ -739,48 +838,77 @@ function GrindTracker() {
               ? (displayEntry.date < TODAY ? "COMPLETED" : (displayEntry.date === TODAY ? "COMPLETED TODAY" : "COMPLETED · EARLY"))
               : (displayEntry.date < TODAY ? "PENDING · CATCH UP" : (displayEntry.date === TODAY ? "TODAY'S SESSION" : "UPCOMING SESSION"));
             const Icon = SUBJ_ICON[displayEntry.subject];
+            const watchUrl = CHAPTER_LINKS[displayEntry.subject] && CHAPTER_LINKS[displayEntry.subject][displayEntry.chapter];
+            const notesUrl = NOTES_LINKS[displayEntry.subject] && NOTES_LINKS[displayEntry.subject][displayEntry.chapter];
             return (
               <>
-                <div style={{ fontSize: 10.5, fontFamily: "'JetBrains Mono', monospace", letterSpacing: "0.1em", textTransform: "uppercase", color: "rgba(255,255,255,0.4)", marginBottom: 10 }}>
-                  {label} · {fmtDate(displayEntry.date, { weekday: "short", day: "2-digit", month: "short" })}
-                </div>
-                <div style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 11, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, padding: "4px 12px", borderRadius: 100, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.04em", background: focusAccent.soft, color: focusAccent.c, border: `1px solid ${focusAccent.glow}` }}>
-                  <Icon width={13} height={13} /> {displayEntry.subject}
-                </div>
-                <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 26, fontWeight: 600, letterSpacing: "-0.01em", marginBottom: 4 }}>{displayEntry.chapter}</div>
-                <div style={{ fontSize: 12.5, color: "rgba(255,255,255,0.45)", fontFamily: "'JetBrains Mono', monospace" }}>
-                  {displayEntry.totalParts > 1 ? `Part ${displayEntry.part} of ${displayEntry.totalParts}` : "Full lecture"} · {fmtDur(displayEntry.duration)}
-                </div>
-
-                {displayEntry.totalParts > 1 && (
-                  <div style={{ marginTop: 18, display: "flex", alignItems: "center", gap: 14, fontFamily: "'JetBrains Mono', monospace" }}>
-                    <div style={{ background: "rgba(0,0,0,0.25)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, padding: "10px 16px", textAlign: "center" }}>
-                      <div style={{ fontSize: 9, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 3 }}>Start</div>
-                      <div style={{ fontSize: 18, fontWeight: 700 }}>{fmtClock(displayEntry.startMin)}</div>
+                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 18 }} className="gt-hero-top">
+                  <div style={{ flex: 1, minWidth: 0, paddingRight: (watchUrl || notesUrl) ? 116 : 0 }} className="gt-hero-text">
+                    <div style={{ fontSize: 10.5, fontFamily: "'JetBrains Mono', monospace", letterSpacing: "0.1em", textTransform: "uppercase", color: "rgba(255,255,255,0.4)", marginBottom: 10 }}>
+                      {label} · {fmtDate(displayEntry.date, { weekday: "short", day: "2-digit", month: "short" })}
                     </div>
-                    <div style={{ color: "rgba(255,255,255,0.3)", fontSize: 16 }}>→</div>
-                    <div style={{ background: "rgba(0,0,0,0.25)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, padding: "10px 16px", textAlign: "center" }}>
-                      <div style={{ fontSize: 9, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 3 }}>Stop</div>
-                      <div style={{ fontSize: 18, fontWeight: 700 }}>{fmtClock(displayEntry.endMin)}</div>
+                    <div style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 11, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, padding: "4px 12px", borderRadius: 100, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.04em", background: focusAccent.soft, color: focusAccent.c, border: `1px solid ${focusAccent.glow}` }}>
+                      <Icon width={13} height={13} /> {displayEntry.subject}
                     </div>
-                  </div>
-                )}
+                    <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 26, fontWeight: 600, letterSpacing: "-0.01em", marginBottom: 4 }}>{displayEntry.chapter}</div>
+                    <div style={{ fontSize: 12.5, color: "rgba(255,255,255,0.45)", fontFamily: "'JetBrains Mono', monospace" }}>
+                      {displayEntry.totalParts > 1 ? `Part ${displayEntry.part} of ${displayEntry.totalParts}` : "Full lecture"} · {fmtDur(displayEntry.duration)}
+                    </div>
 
-                {done ? (
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "12px 14px 12px 18px", background: "rgba(111,227,161,0.12)", border: "1px solid rgba(111,227,161,0.4)", borderRadius: 14, marginTop: 16, fontSize: 13, color: "#8ef0b6", fontWeight: 600, flexWrap: "wrap" }}>
-                    <span style={{ display: "flex", alignItems: "center", gap: 10 }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>Session marked complete</span>
-                    <button className="gt-btn gt-undo-btn" onClick={() => markDone(displayEntry.date, false)} style={{ fontFamily: "Inter, Arial, sans-serif", fontSize: 11, fontWeight: 700, lineHeight: 1.2, padding: "6px 9px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.18)", background: "rgba(0,0,0,0.15)", color: "#fff", cursor: "pointer" }}>Undo</button>
+                    {displayEntry.totalParts > 1 && (
+                      <div style={{ marginTop: 18, marginBottom: 18,display: "flex", alignItems: "center", gap: 14, fontFamily: "'JetBrains Mono', monospace" }}>
+                        <div style={{ background: "rgba(0,0,0,0.25)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, padding: "10px 16px", textAlign: "center" }}>
+                          <div style={{ fontSize: 9, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 3 }}>Start</div>
+                          <div style={{ fontSize: 18, fontWeight: 700 }}>{fmtClock(displayEntry.startMin)}</div>
+                        </div>
+                        <div style={{ color: "rgba(255,255,255,0.3)", fontSize: 16 }}>→</div>
+                        <div style={{ background: "rgba(0,0,0,0.25)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, padding: "10px 16px", textAlign: "center" }}>
+                          <div style={{ fontSize: 9, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 3 }}>Stop</div>
+                          <div style={{ fontSize: 18, fontWeight: 700 }}>{fmtClock(displayEntry.endMin)}</div>
+                        </div>
+                      </div>
+                    )}
+
+                    {done ? (
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "12px 14px 12px 18px", background: "rgba(111,227,161,0.12)", border: "1px solid rgba(111,227,161,0.4)", borderRadius: 14, marginTop: 14, fontSize: 13, color: "#8ef0b6", fontWeight: 600, flexWrap: "wrap" }}>
+                        <span style={{ display: "flex", alignItems: "center", gap: 10 }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>Session marked complete</span>
+                        <button className="gt-btn gt-undo-btn" onClick={() => markDone(displayEntry.date, false)} style={{ fontFamily: "Inter, Arial, sans-serif", fontSize: 11, fontWeight: 700, lineHeight: 1.2, padding: "6px 9px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.18)", background: "rgba(0,0,0,0.15)", color: "#fff", cursor: "pointer" }}>Undo</button>
+                      </div>
+                    ) : (
+                      <div style={{ display: "flex", gap: 10, marginTop: 14, flexWrap: "wrap" }} className="gt-hero-actions">
+                        <button className="gt-btn" onClick={() => markDone(displayEntry.date, true)} style={{ fontSize: 13, fontWeight: 700, padding: "11px 20px", borderRadius: 12, border: "none", background: `linear-gradient(135deg, ${focusAccent.c}, ${focusAccent.c}dd)`, color: "#06070a", cursor: "pointer" }}>
+                          Mark complete
+                        </button>
+                        <button className="gt-btn" onClick={() => { setActiveTab(displayEntry.subject); document.getElementById("gt-wall")?.scrollIntoView({ behavior: "smooth", block: "start" }); }} style={{ fontSize: 13, fontWeight: 600, padding: "11px 20px", borderRadius: 12, border: "1px solid rgba(255,255,255,0.15)", background: "transparent", color: "#fff", cursor: "pointer" }}>
+                          View in wall
+                        </button>
+                      </div>
+                    )}
                   </div>
-                ) : (
-                  <div style={{ display: "flex", gap: 10, marginTop: 18, flexWrap: "wrap" }} className="gt-hero-actions">
-                    <button className="gt-btn" onClick={() => markDone(displayEntry.date, true)} style={{ fontSize: 13, fontWeight: 700, padding: "11px 20px", borderRadius: 12, border: "none", background: `linear-gradient(135deg, ${focusAccent.c}, ${focusAccent.c}dd)`, color: "#06070a", cursor: "pointer" }}>
-                      Mark complete
-                    </button>
-                    <button className="gt-btn" onClick={() => { setActiveTab(displayEntry.subject); document.getElementById("gt-wall")?.scrollIntoView({ behavior: "smooth", block: "start" }); }} style={{ fontSize: 13, fontWeight: 600, padding: "11px 20px", borderRadius: 12, border: "1px solid rgba(255,255,255,0.15)", background: "transparent", color: "#fff", cursor: "pointer" }}>
-                      View in wall
-                    </button>
-                  </div>
-                )}
+
+                  {(watchUrl || notesUrl) && (
+                    <div style={{ position: "absolute", right: 26, bottom: 26, display: "flex", flexDirection: "column", gap: 8, zIndex: 2 }} className="gt-hero-media-btns">
+                      {notesUrl && (
+                        <a href={notesUrl} target="_blank" rel="noopener noreferrer" className="gt-btn gt-watch-btn gt-watch-square"
+                          style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6,
+                            width: 96, height: 96, borderRadius: 18, textDecoration: "none",
+                            border: `1px solid ${focusAccent.glow}`, background: focusAccent.soft, color: focusAccent.c, cursor: "pointer" }}>
+                          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10.5, fontWeight: 700, letterSpacing: ".04em", textTransform: "uppercase" }}>Notes</span>
+                        </a>
+                      )}
+                      {watchUrl && (
+                        <a href={watchUrl} target="_blank" rel="noopener noreferrer" className="gt-btn gt-watch-btn gt-watch-square"
+                          style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6,
+                            width: 96, height: 96, borderRadius: 18, textDecoration: "none",
+                            border: `1px solid ${focusAccent.glow}`, background: focusAccent.soft, color: focusAccent.c, cursor: "pointer" }}>
+                          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10.5, fontWeight: 700, letterSpacing: ".04em", textTransform: "uppercase" }}>Watch</span>
+                        </a>
+                      )}
+                    </div>
+                  )}
+                </div>
               </>
             );
           })() : (
@@ -957,10 +1085,34 @@ function GrindTracker() {
                     border: complete ? `1px solid ${a.glow}` : "1px solid rgba(255,255,255,0.1)",
                     background: complete ? `linear-gradient(155deg, ${a.soft}, rgba(255,255,255,0.02))` : "rgba(255,255,255,0.03)",
                     boxShadow: complete ? `0 0 24px -10px ${a.glow}` : "none" }}>
-                  <div style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 4 }}>
+                  <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8, marginBottom: 4 }}>
                     <div>
                       <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9.5, color: "rgba(255,255,255,0.35)" }}>CH {String(idx + 1).padStart(2, "0")}</div>
                       <div style={{ fontSize: 13.5, fontWeight: 700, lineHeight: 1.25, fontFamily: "'Space Grotesk', sans-serif" }}>{c.name}</div>
+                    </div>
+                    <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                      {NOTES_LINKS[activeTab] && NOTES_LINKS[activeTab][c.name] && (
+                        <a href={NOTES_LINKS[activeTab][c.name]} target="_blank" rel="noopener noreferrer" className="gt-btn gt-watch-btn"
+                          onClick={e => e.stopPropagation()}
+                          style={{ display: "inline-flex", alignItems: "center", gap: 5,
+                            fontFamily: "'JetBrains Mono', monospace", fontSize: 9.5, fontWeight: 700, letterSpacing: ".02em",
+                            padding: "6px 10px", borderRadius: 100, textDecoration: "none",
+                            border: "1px solid rgba(255,255,255,0.16)", background: "rgba(255,255,255,0.05)", color: "#fff", cursor: "pointer", whiteSpace: "nowrap" }}>
+                          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                          Notes
+                        </a>
+                      )}
+                      {CHAPTER_LINKS[activeTab] && CHAPTER_LINKS[activeTab][c.name] && (
+                        <a href={CHAPTER_LINKS[activeTab][c.name]} target="_blank" rel="noopener noreferrer" className="gt-btn gt-watch-btn"
+                          onClick={e => e.stopPropagation()}
+                          style={{ display: "inline-flex", alignItems: "center", gap: 5,
+                            fontFamily: "'JetBrains Mono', monospace", fontSize: 9.5, fontWeight: 700, letterSpacing: ".02em",
+                            padding: "6px 10px", borderRadius: 100, textDecoration: "none",
+                            border: `1px solid ${a.glow}`, background: a.soft, color: a.c, cursor: "pointer", whiteSpace: "nowrap" }}>
+                          <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                          Watch
+                        </a>
+                      )}
                     </div>
                   </div>
                   <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10.5, color: "rgba(255,255,255,0.4)", marginBottom: 10 }}>
