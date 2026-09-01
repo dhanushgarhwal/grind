@@ -628,14 +628,23 @@ function GrindTracker() {
 
 
   const expectedPct = useCallback((subj) => {
-    // Only sessions strictly before today count as "should already be done" — a
-    // session scheduled for today itself isn't overdue yet, it's in progress.
-    // This mirrors projectFinish's `missed` definition (e.date < TODAY) so the
-    // Subject Race and Time Machine never disagree about what's actually pending.
+    // Subject Race is session-based: every lecture scheduled for today or
+    // earlier is part of the pace you should have reached by the end of today.
+    // This means 5 scheduled + 5 completed = exactly on pace.
     const sessions = studyDays.filter(e => e.subject === subj);
     if (sessions.length === 0) return 0;
-    return sessions.filter(e => e.date < TODAY).length / sessions.length;
+    return sessions.filter(e => e.date <= TODAY).length / sessions.length;
   }, [studyDays]);
+
+  const racePct = useCallback((subj) => {
+    // Subject Race counts completed lectures, not lecture minutes. A lecture
+    // completed early counts immediately, so 5 scheduled + 6 completed means
+    // you are one lecture ahead.
+    const sessions = studyDays.filter(e => e.subject === subj);
+    if (sessions.length === 0) return 0;
+    const completed = sessions.filter(e => state.doneDays[e.date]).length;
+    return completed / sessions.length;
+  }, [studyDays, state.doneDays]);
 
   const projectFinish = useCallback((subj) => {
     const sessions = studyDays.filter(e => e.subject === subj);
@@ -976,7 +985,7 @@ function GrindTracker() {
             <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 15, fontWeight: 600, marginBottom: 16 }}>Subject Race</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               {SUBJECTS.map(subj => {
-                const pct = subjectPct(subj), exp = expectedPct(subj);
+                const pct = racePct(subj), exp = expectedPct(subj);
                 const a = ACCENT[SKEY[subj]];
                 const diff = pct - exp;
                 const Icon = SUBJ_ICON[subj];
@@ -1092,25 +1101,21 @@ function GrindTracker() {
                     </div>
                     <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
                       {NOTES_LINKS[activeTab] && NOTES_LINKS[activeTab][c.name] && (
-                        <a href={NOTES_LINKS[activeTab][c.name]} target="_blank" rel="noopener noreferrer" className="gt-btn gt-watch-btn"
-                          onClick={e => e.stopPropagation()}
-                          style={{ display: "inline-flex", alignItems: "center", gap: 5,
-                            fontFamily: "'JetBrains Mono', monospace", fontSize: 9.5, fontWeight: 700, letterSpacing: ".02em",
-                            padding: "6px 10px", borderRadius: 100, textDecoration: "none",
-                            border: "1px solid rgba(255,255,255,0.16)", background: "rgba(255,255,255,0.05)", color: "#fff", cursor: "pointer", whiteSpace: "nowrap" }}>
-                          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                          Notes
+                        <a href={NOTES_LINKS[activeTab][c.name]} target="_blank" rel="noopener noreferrer" className="gt-btn gt-resource-icon-btn"
+                          onClick={e => e.stopPropagation()} title="Notes" aria-label={`Notes for ${c.name}`}
+                          style={{ display: "inline-flex", alignItems: "center", justifyContent: "center",
+                            width: 30, height: 30, minWidth: 30, padding: 0, borderRadius: "50%", textDecoration: "none",
+                            border: "1px solid rgba(255,255,255,0.16)", background: "rgba(255,255,255,0.05)", color: "#fff", cursor: "pointer", flexShrink: 0 }}>
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                         </a>
                       )}
                       {CHAPTER_LINKS[activeTab] && CHAPTER_LINKS[activeTab][c.name] && (
-                        <a href={CHAPTER_LINKS[activeTab][c.name]} target="_blank" rel="noopener noreferrer" className="gt-btn gt-watch-btn"
-                          onClick={e => e.stopPropagation()}
-                          style={{ display: "inline-flex", alignItems: "center", gap: 5,
-                            fontFamily: "'JetBrains Mono', monospace", fontSize: 9.5, fontWeight: 700, letterSpacing: ".02em",
-                            padding: "6px 10px", borderRadius: 100, textDecoration: "none",
-                            border: `1px solid ${a.glow}`, background: a.soft, color: a.c, cursor: "pointer", whiteSpace: "nowrap" }}>
-                          <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-                          Watch
+                        <a href={CHAPTER_LINKS[activeTab][c.name]} target="_blank" rel="noopener noreferrer" className="gt-btn gt-resource-icon-btn"
+                          onClick={e => e.stopPropagation()} title="Watch" aria-label={`Watch ${c.name}`}
+                          style={{ display: "inline-flex", alignItems: "center", justifyContent: "center",
+                            width: 30, height: 30, minWidth: 30, padding: 0, borderRadius: "50%", textDecoration: "none",
+                            border: `1px solid ${a.glow}`, background: a.soft, color: a.c, cursor: "pointer", flexShrink: 0 }}>
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
                         </a>
                       )}
                     </div>
