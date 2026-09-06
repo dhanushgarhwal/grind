@@ -293,7 +293,7 @@ function genSyncCode() {
 // STORAGE: Firestore when configured, localStorage fallback otherwise
 // ============================================================
 function useProgressStore() {
-  const [state, setState] = useState({ doneDays: {}, resources: {}, ready: false });
+  const [state, setState] = useState({ doneDays: {}, resources: {}, bestStreak: 0, ready: false });
   const [syncMode, setSyncMode] = useState("checking"); // checking | firestore | local
   const [syncCode, setSyncCode] = useState(null);
   const [syncStatus, setSyncStatus] = useState("idle"); // idle | saving | saved | error
@@ -305,7 +305,7 @@ function useProgressStore() {
       const raw = localStorage.getItem(LS_KEY);
       if (raw) return JSON.parse(raw);
     } catch (e) {}
-    return { doneDays: {}, resources: {} };
+    return { doneDays: {}, resources: {}, bestStreak: 0 };
   }, []);
 
   const saveLocal = useCallback((data) => {
@@ -346,7 +346,7 @@ function useProgressStore() {
     __fsGetDoc(ref).then(snap => {
       if (snap.exists) {
         const data = snap.data();
-        setState(s => ({ ...s, doneDays: data.doneDays || {}, resources: data.resources || {}, ready: true }));
+        setState(s => ({ ...s, doneDays: data.doneDays || {}, resources: data.resources || {}, bestStreak: Number(data.bestStreak) || 0, ready: true }));
       } else {
         setState(s => ({ ...s, ready: true }));
       }
@@ -355,7 +355,7 @@ function useProgressStore() {
         if (skipNextSnapshot.current) { skipNextSnapshot.current = false; return; }
         if (snap2.exists) {
           const data = snap2.data();
-          setState(s => ({ ...s, doneDays: data.doneDays || {}, resources: data.resources || {}, ready: true }));
+          setState(s => ({ ...s, doneDays: data.doneDays || {}, resources: data.resources || {}, bestStreak: Number(data.bestStreak) || 0, ready: true }));
         }
       }, (err) => {
         console.error("Firestore listen error:", err);
@@ -408,7 +408,7 @@ function useProgressStore() {
 
 
   const resetProgress = useCallback(() => {
-    const empty = { doneDays: {}, resources: {}, ready: true };
+    const empty = { doneDays: {}, resources: {}, bestStreak: 0, ready: true };
     setState(empty);
     try { localStorage.removeItem(LS_KEY); } catch (e) {}
     persist(empty);
@@ -619,32 +619,81 @@ function GrindTracker() {
   }, [selectedIndex]);
 
   const streak = useMemo(() => {
-    // CURRENT STREAK: counts consecutive completed study sessions ending at
-    // "today" (or the most recent study day on/before today). It never
-    // anchors on a future-dated completion — marking tomorrow's session
-    // early should not inflate today's streak — and it breaks the instant
-    // a study day on/before today is missing its completion. Rest/buffer
-    // days are already excluded from studyDays, so they never break a run.
-    const upToToday = studyDays.filter(e => e.date <= TODAY);
+    /*
+     * DATE-WISE STREAK:
+     * A streak is about calendar dates, not lecture/chapter continuity.
+     *
+     * Rule for each date:
+     *   study day + completed today      => streak continues
+     *   study day + not completed        => streak breaks
+     *   rest/buffer                      => ignored (does not break)
+     *
+     * Importantly, we NEVER look at the previous lecture/chapter or whether
+     * its part was completed. Only that exact calendar date matters.
+     *
+     * The historical dates are read from real persisted doneDays data.
+     * Nothing is hard-coded for a new account, so a fresh account starts at 0.
+     */
+    const datedStudyDays = studyDays
+      .filter(e => e.date <= TODAY)
+      .sort((a, b) => a.date.localeCompare(b.date));
+
     let current = 0;
-    for (let i = upToToday.length - 1; i >= 0 && state.doneDays[upToToday[i].date]; i--) current++;
+    let run = 0;
+    let longest = 0;
 
-    // LONGEST STREAK: the single best run of consecutive completed study
-    // days ever recorded across the whole plan (past or present), i.e. the
-    // highest streak attained — independent of whether it's still active.
-    let longest = 0, run = 0;
-    studyDays.forEach(e => {
-      if (state.doneDays[e.date]) { run++; longest = Math.max(longest, run); }
-      else run = 0;
-    });
-    // The current streak can itself be a new best if today's run hasn't
-    // been folded into `longest` yet (e.g. all sessions up to today are
-    // done but future ones aren't, so the forEach above already covers
-    // it — this max just guards against any edge-case drift).
-    longest = Math.max(longest, current);
+    for (const entry of datedStudyDays) {
+      if (state.doneDays[entry.date] === true) {
+        run++;
+        longest = Math.max(longest, run);
+      } else {
+        run = 0;
+      }
+    }
 
-    return { current, longest };
-  }, [studyDays, state.doneDays]);
+    // Current streak is only the run ending on TODAY.
+    const todayEntry = PLAN.calendar.find(e => e.date === TODAY);
+    if (todayEntry && todayEntry.type === "study" && state.doneDays[TODAY] === true) {
+      current = 1;
+      for (let i = datedStudyDays.length - 2; i >= 0; i--) {
+        if (state.doneDays[datedStudyDays[i].date] === true) current++;
+        else break;
+      }
+    } else {
+      current = 0;
+    }
+
+    const calculatedBest = Math.max(longest, current);
+    const savedBest = Number(state.bestStreak) || 0;
+
+    return { current, longest: Math.max(savedBest, calculatedBest) };
+  }, [studyDays, state.doneDays, state.bestStreak]);
+
+  // Persist the highest streak ever reached. This is updated from REAL
+  // completed date data, so an existing account can recover its Sep 1–5 run,
+  // while a new account with no completed dates remains at 0.
+  useEffect(() => {
+    const calculatedBest = (() => {
+      let run = 0, best = 0;
+      for (const entry of studyDays.filter(e => e.date <= TODAY).sort((a, b) => a.date.localeCompare(b.date))) {
+        if (state.doneDays[entry.date] === true) {
+          run++;
+          best = Math.max(best, run);
+        } else {
+          run = 0;
+        }
+      }
+      return best;
+    })();
+
+    if (calculatedBest > (Number(state.bestStreak) || 0)) {
+      setState(s => {
+        const next = { ...s, bestStreak: calculatedBest };
+        persist(next);
+        return next;
+      });
+    }
+  }, [studyDays, state.doneDays, state.bestStreak, persist]);
 
 
   const expectedPct = useCallback((subj) => {
