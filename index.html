@@ -282,6 +282,24 @@ const TODAY = todayISO();
 const LS_KEY = "grind_tracker_progress_v1";
 const LS_SYNC_CODE_KEY = "grind_tracker_sync_code_v1";
 
+// Calculate the highest streak directly from the persisted date-wise completion data.
+// This is never hard-coded, so new accounts always start from their real data.
+function calculateBestStreak(doneDays) {
+  const datedStudyDays = PLAN.calendar
+    .filter(e => e.type === "study" && e.date <= TODAY)
+    .sort((a, b) => a.date.localeCompare(b.date));
+  let run = 0, best = 0;
+  for (const entry of datedStudyDays) {
+    if (doneDays && doneDays[entry.date] === true) {
+      run++;
+      best = Math.max(best, run);
+    } else {
+      run = 0;
+    }
+  }
+  return best;
+}
+
 function genSyncCode() {
   const words = ["orbit", "cedar", "flux", "quartz", "ember", "delta", "coral", "lumen", "nova", "vapor", "birch", "prism"];
   const w = words[Math.floor(Math.random() * words.length)];
@@ -303,7 +321,11 @@ function useProgressStore() {
   const loadLocal = useCallback(() => {
     try {
       const raw = localStorage.getItem(LS_KEY);
-      if (raw) return JSON.parse(raw);
+      if (raw) {
+        const data = JSON.parse(raw);
+        const calculatedBest = calculateBestStreak(data.doneDays || {});
+        return { ...data, bestStreak: Math.max(Number(data.bestStreak) || 0, calculatedBest) };
+      }
     } catch (e) {}
     return { doneDays: {}, resources: {}, bestStreak: 0 };
   }, []);
@@ -346,7 +368,7 @@ function useProgressStore() {
     __fsGetDoc(ref).then(snap => {
       if (snap.exists) {
         const data = snap.data();
-        setState(s => ({ ...s, doneDays: data.doneDays || {}, resources: data.resources || {}, bestStreak: Number(data.bestStreak) || 0, ready: true }));
+        setState(s => ({ ...s, doneDays: data.doneDays || {}, resources: data.resources || {}, bestStreak: Math.max(Number(data.bestStreak) || 0, calculateBestStreak(data.doneDays || {})), ready: true }));
       } else {
         setState(s => ({ ...s, ready: true }));
       }
@@ -355,7 +377,7 @@ function useProgressStore() {
         if (skipNextSnapshot.current) { skipNextSnapshot.current = false; return; }
         if (snap2.exists) {
           const data = snap2.data();
-          setState(s => ({ ...s, doneDays: data.doneDays || {}, resources: data.resources || {}, bestStreak: Number(data.bestStreak) || 0, ready: true }));
+          setState(s => ({ ...s, doneDays: data.doneDays || {}, resources: data.resources || {}, bestStreak: Math.max(Number(data.bestStreak) || 0, calculateBestStreak(data.doneDays || {})), ready: true }));
         }
       }, (err) => {
         console.error("Firestore listen error:", err);
@@ -390,7 +412,9 @@ function useProgressStore() {
 
   const markDone = useCallback((date, val) => {
     setState(s => {
-      const next = { ...s, doneDays: { ...s.doneDays, [date]: val } };
+      const doneDays = { ...s.doneDays, [date]: val };
+      const calculatedBest = calculateBestStreak(doneDays);
+      const next = { ...s, doneDays, bestStreak: Math.max(Number(s.bestStreak) || 0, calculatedBest) };
       persist(next);
       return next;
     });
@@ -619,29 +643,14 @@ function GrindTracker() {
   }, [selectedIndex]);
 
   const streak = useMemo(() => {
-    /*
-     * DATE-WISE STREAK:
-     * A streak is about calendar dates, not lecture/chapter continuity.
-     *
-     * Rule for each date:
-     *   study day + completed today      => streak continues
-     *   study day + not completed        => streak breaks
-     *   rest/buffer                      => ignored (does not break)
-     *
-     * Importantly, we NEVER look at the previous lecture/chapter or whether
-     * its part was completed. Only that exact calendar date matters.
-     *
-     * The historical dates are read from real persisted doneDays data.
-     * Nothing is hard-coded for a new account, so a fresh account starts at 0.
-     */
+    // DATE-WISE: only the exact scheduled date matters. Lecture/chapter
+    // continuity is never used. Rest/buffer dates are ignored.
     const datedStudyDays = studyDays
       .filter(e => e.date <= TODAY)
       .sort((a, b) => a.date.localeCompare(b.date));
 
-    let current = 0;
     let run = 0;
     let longest = 0;
-
     for (const entry of datedStudyDays) {
       if (state.doneDays[entry.date] === true) {
         run++;
@@ -651,7 +660,8 @@ function GrindTracker() {
       }
     }
 
-    // Current streak is only the run ending on TODAY.
+    // Current streak exists only when TODAY itself is a completed study day.
+    let current = 0;
     const todayEntry = PLAN.calendar.find(e => e.date === TODAY);
     if (todayEntry && todayEntry.type === "study" && state.doneDays[TODAY] === true) {
       current = 1;
@@ -659,42 +669,13 @@ function GrindTracker() {
         if (state.doneDays[datedStudyDays[i].date] === true) current++;
         else break;
       }
-    } else {
-      current = 0;
     }
 
-    const calculatedBest = Math.max(longest, current);
-    const savedBest = Number(state.bestStreak) || 0;
-
-    return { current, longest: Math.max(savedBest, calculatedBest) };
+    return {
+      current,
+      longest: Math.max(Number(state.bestStreak) || 0, longest, current)
+    };
   }, [studyDays, state.doneDays, state.bestStreak]);
-
-  // Persist the highest streak ever reached. This is updated from REAL
-  // completed date data, so an existing account can recover its Sep 1–5 run,
-  // while a new account with no completed dates remains at 0.
-  useEffect(() => {
-    const calculatedBest = (() => {
-      let run = 0, best = 0;
-      for (const entry of studyDays.filter(e => e.date <= TODAY).sort((a, b) => a.date.localeCompare(b.date))) {
-        if (state.doneDays[entry.date] === true) {
-          run++;
-          best = Math.max(best, run);
-        } else {
-          run = 0;
-        }
-      }
-      return best;
-    })();
-
-    if (calculatedBest > (Number(state.bestStreak) || 0)) {
-      setState(s => {
-        const next = { ...s, bestStreak: calculatedBest };
-        persist(next);
-        return next;
-      });
-    }
-  }, [studyDays, state.doneDays, state.bestStreak, persist]);
-
 
   const expectedPct = useCallback((subj) => {
     // Subject Race is session-based: every lecture scheduled for today or
