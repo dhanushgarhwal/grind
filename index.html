@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>GRIND</title>
-<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2306070a'/%3E%3Ctext x='6' y='23' font-family='Arial,sans-serif' font-weight='700' font-size='19' fill='%23f4f5f7'%3EG%3C/text%3E%3Ccircle cx='25' cy='22' r='2.6' fill='%2364d9ea'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
@@ -416,7 +416,9 @@ function useProgressStore() {
 
   const switchSyncCode = useCallback((newCode) => {
     localStorage.setItem(LS_SYNC_CODE_KEY, newCode);
-    setState(s => ({ ...s, ready: false }));
+    // Clear the previous code's progress immediately so it can never be
+    // mistaken for the new code's data while the new snapshot loads.
+    setState({ doneDays: {}, resources: {}, ready: false });
     setSyncCode(newCode);
   }, []);
 
@@ -435,18 +437,24 @@ const SUBJ_ICON = {
     React.createElement("path", { d: "M4 7h16M4 17h6M15 12h5M9 12l4 5M13 12l-4 5" })),
 };
 
-function GlassPanel({ children, style, accentGlow, id }) {
+function GlassPanel({ children, style, accentGlow, id, variant }) {
+  const isHero = variant === "hero";
   return (
     <div id={id} style={{
-      position: "relative", borderRadius: 24,
-      background: "linear-gradient(155deg, rgba(255,255,255,0.10), rgba(255,255,255,0.03))",
+      position: "relative", borderRadius: isHero ? 28 : 24,
+      background: isHero
+        ? "linear-gradient(160deg, rgba(255,255,255,0.13), rgba(255,255,255,0.025))"
+        : "linear-gradient(155deg, rgba(255,255,255,0.10), rgba(255,255,255,0.03))",
       backdropFilter: "blur(28px) saturate(180%)", WebkitBackdropFilter: "blur(28px) saturate(180%)",
-      border: "1px solid rgba(255,255,255,0.14)",
+      border: isHero ? "1px solid rgba(255,255,255,0.20)" : "1px solid rgba(255,255,255,0.14)",
       boxShadow: accentGlow
-        ? `0 8px 32px rgba(0,0,0,0.35), 0 0 60px -20px ${accentGlow}, inset 0 1px 0 rgba(255,255,255,0.18)`
-        : "0 8px 32px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.18)",
+        ? `0 8px 32px rgba(0,0,0,0.35), 0 0 ${isHero ? 80 : 60}px -20px ${accentGlow}, inset 0 1px 0 rgba(255,255,255,${isHero ? 0.24 : 0.18})`
+        : `0 8px 32px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,${isHero ? 0.24 : 0.18})`,
       ...style,
     }}>
+      {isHero && accentGlow && (
+        <div aria-hidden="true" style={{ position: "absolute", top: 0, left: 24, right: 24, height: 2, borderRadius: 2, background: `linear-gradient(90deg, transparent, ${accentGlow}, transparent)` }} />
+      )}
       {children}
     </div>
   );
@@ -611,18 +619,30 @@ function GrindTracker() {
   }, [selectedIndex]);
 
   const streak = useMemo(() => {
-    // Use the latest completed session as the anchor so progress updates immediately
-    // even when the user marks a future or past date from the navigator.
-    const completedIndexes = studyDays.map((e, i) => state.doneDays[e.date] ? i : -1).filter(i => i >= 0);
-    if (completedIndexes.length === 0) return { current: 0, longest: 0 };
-    const anchor = Math.max(...completedIndexes);
+    // CURRENT STREAK: counts consecutive completed study sessions ending at
+    // "today" (or the most recent study day on/before today). It never
+    // anchors on a future-dated completion — marking tomorrow's session
+    // early should not inflate today's streak — and it breaks the instant
+    // a study day on/before today is missing its completion. Rest/buffer
+    // days are already excluded from studyDays, so they never break a run.
+    const upToToday = studyDays.filter(e => e.date <= TODAY);
     let current = 0;
-    for (let i = anchor; i >= 0 && state.doneDays[studyDays[i].date]; i--) current++;
+    for (let i = upToToday.length - 1; i >= 0 && state.doneDays[upToToday[i].date]; i--) current++;
+
+    // LONGEST STREAK: the single best run of consecutive completed study
+    // days ever recorded across the whole plan (past or present), i.e. the
+    // highest streak attained — independent of whether it's still active.
     let longest = 0, run = 0;
     studyDays.forEach(e => {
       if (state.doneDays[e.date]) { run++; longest = Math.max(longest, run); }
       else run = 0;
     });
+    // The current streak can itself be a new best if today's run hasn't
+    // been folded into `longest` yet (e.g. all sessions up to today are
+    // done but future ones aren't, so the forEach above already covers
+    // it — this max just guards against any edge-case drift).
+    longest = Math.max(longest, current);
+
     return { current, longest };
   }, [studyDays, state.doneDays]);
 
@@ -652,18 +672,22 @@ function GrindTracker() {
     const last = sessions[lastIndex];
     // Session-based: every session completed ahead of its planned date moves the
     // finish one SESSION earlier; every overdue uncompleted session moves it one
-    // session later. The projected date is anchored to this subject's own real
-    // session list (sessions[lastIndex - ahead]) instead of last.date -
-    // ahead*86400000, because lectures for one subject aren't exactly 1 real day
-    // apart (other subjects rotate in between) — flat day-arithmetic could land
-    // on a date that isn't even one of this subject's sessions.
+    // session later. These two effects net against each other — being 3 sessions
+    // ahead AND 2 sessions behind nets to just 1 session ahead, not 3 — so we
+    // compute a single net figure instead of branching on "ahead" alone.
+    // The projected date is anchored to this subject's own real session list
+    // (sessions[lastIndex - net]) instead of last.date - net*86400000, because
+    // lectures for one subject aren't exactly 1 real day apart (other subjects
+    // rotate in between) — flat day-arithmetic could land on a date that isn't
+    // even one of this subject's sessions.
     const ahead = sessions.filter(e => e.date > TODAY && state.doneDays[e.date]).length;
     const missed = sessions.filter(e => e.date < TODAY && !state.doneDays[e.date]).length;
-    const earlyIndex = Math.max(lastIndex - ahead, 0);
-    const isEarly = missed <= ahead && ahead > 0;
+    const net = ahead - missed;
+    const earlyIndex = Math.max(lastIndex - net, 0);
+    const isEarly = net > 0;
     const projDate = isEarly
       ? parseISO(sessions[earlyIndex].date)
-      : new Date(parseISO(last.date).getTime() + missed * 86400000);
+      : new Date(parseISO(last.date).getTime() + Math.max(-net, 0) * 86400000);
     // delta is the real number of calendar days between the projected date and
     // the originally-scheduled last date — NOT the session count — so the "Xd
     // early / Xd late" label matches how far the date actually moved. With
@@ -702,12 +726,17 @@ function GrindTracker() {
       </div>
 
       <style>{`
-        @keyframes drift { 0%,100% { transform: translate(0,0) scale(1); } 33% { transform: translate(4%,6%) scale(1.08); } 66% { transform: translate(-3%,-4%) scale(0.96); } }
+        @keyframes drift { 0%,100% { transform: translate3d(0,0,0) scale(1); } 33% { transform: translate3d(4%,6%,0) scale(1.08); } 66% { transform: translate3d(-3%,-4%,0) scale(0.96); } }
         @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
         @keyframes fadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes splashIn { 0% { opacity: 0; transform: translateY(14px) scale(.96); filter: blur(8px); } 55% { opacity: 1; filter: blur(0); } 100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); } }
         @keyframes splashBar { 0% { transform: translateX(-110%); } 100% { transform: translateX(220%); } }
         @keyframes splashGlow { 0%,100% { transform: scale(1); opacity: .45; } 50% { transform: scale(1.12); opacity: .8; } }
+        @keyframes flameFlicker { 0%,100% { transform: scale(1) rotate(0deg); } 25% { transform: scale(1.06) rotate(-3deg); } 50% { transform: scale(0.97) rotate(2deg); } 75% { transform: scale(1.04) rotate(-1deg); } }
+        @keyframes flameBest { 0%,100% { transform: scale(1); filter: drop-shadow(0 0 4px rgba(255,158,87,0.6)); } 50% { transform: scale(1.15); filter: drop-shadow(0 0 9px rgba(255,158,87,0.95)); } }
+        @keyframes popIn { 0% { opacity: 0; transform: scale(0.85); } 100% { opacity: 1; transform: scale(1); } }
+        @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+
         .grind-splash { position: fixed; inset: 0; overflow: hidden; background: #06070a; color: #f4f5f7; display: grid; place-items: center; isolation: isolate; }
         .grind-splash::before { content: ""; position: absolute; inset: 0; z-index: -1; background: radial-gradient(circle at 50% 42%, rgba(100,217,234,.11), transparent 26%), linear-gradient(180deg, rgba(255,255,255,.025), transparent 42%); }
         .grind-splash-content { width: min(280px, 72vw); text-align: center; animation: splashIn .8s cubic-bezier(.16,1,.3,1) both; }
@@ -715,34 +744,59 @@ function GrindTracker() {
         .grind-splash-line { height: 2px; width: 100%; margin: 24px 0 14px; overflow: hidden; border-radius: 999px; background: rgba(255,255,255,.08); }
         .grind-splash-line span { display: block; width: 44%; height: 100%; border-radius: inherit; background: linear-gradient(90deg, transparent, #64d9ea, #c4a8ff, transparent); animation: splashBar 1.05s ease-in-out infinite; }
         .grind-splash-status { font: 700 10px/1.2 "JetBrains Mono", monospace; letter-spacing: .16em; color: rgba(255,255,255,.42); }
-        .grind-splash-orb { position: absolute; width: 42vw; height: 42vw; min-width: 260px; min-height: 260px; border-radius: 50%; filter: blur(100px); z-index: -1; animation: splashGlow 4s ease-in-out infinite; }
+        .grind-splash-orb { position: absolute; width: 42vw; height: 42vw; min-width: 260px; min-height: 260px; border-radius: 50%; filter: blur(100px); z-index: -1; animation: splashGlow 4s ease-in-out infinite; will-change: transform, opacity; }
         .grind-splash-orb-a { background: #64d9ea; opacity: .13; top: -15%; left: 6%; }
         .grind-splash-orb-b { background: #c4a8ff; opacity: .11; right: 4%; bottom: -20%; animation-delay: -2s; }
         .grind-mini-loader { color: rgba(255,255,255,.5); font: 700 11px/1 "JetBrains Mono", monospace; letter-spacing: .12em; animation: pulse 1.2s ease-in-out infinite; }
+
         .gt-scope * { box-sizing: border-box; }
         .gt-scope button { font-family: 'Inter', Arial, sans-serif !important; font-style: normal !important; font-variant: normal !important; font-weight: 600; line-height: 1.2 !important; letter-spacing: 0 !important; text-transform: none; }
         .gt-nav-btn { padding: 4px 7px !important; min-height: 26px; border-radius: 7px !important; border: 1px solid rgba(255,255,255,0.12) !important; background: rgba(255,255,255,0.05) !important; color: rgba(255,255,255,0.78) !important; cursor: pointer; font-size: 10px !important; white-space: nowrap; }
         .gt-nav-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+        .gt-nav-btn:not(:disabled):hover { background: rgba(255,255,255,0.09) !important; border-color: rgba(255,255,255,0.22) !important; }
         .gt-scope ::selection { background: #64d9ea; color: #06070a; }
-        .gt-hm-cell { transition: transform 0.12s ease, box-shadow 0.12s ease; will-change: transform; contain: layout paint style; }
-        .gt-hm-cell:hover { transform: scale(1.35); z-index: 5; }
-        .gt-card { transition: border-color 0.15s ease, transform 0.15s ease; will-change: transform; }
-        .gt-card:hover { transform: translateY(-2px); }
-        .gt-pip { transition: all 0.15s ease; }
-        .gt-pip:hover { transform: translateY(-1px); }
-        .gt-watch-btn { transition: all 0.15s ease; }
-        .gt-watch-btn:hover { transform: translateY(-1px); filter: brightness(1.15); }
-        .gt-btn { transition: all 0.15s ease; }
+
+        /* Heatmap: contain paint work per-cell so hovering one cell never
+           triggers a layout/paint pass across the other ~120 cells. */
+        .gt-heatmap { content-visibility: auto; }
+        .gt-hm-cell { transition: transform 0.12s cubic-bezier(.2,.9,.3,1.2), box-shadow 0.12s ease; will-change: transform; contain: layout paint style; }
+        .gt-hm-cell:hover, .gt-hm-cell:focus-visible { transform: scale(1.4); z-index: 5; }
+
+        .gt-card { transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease; will-change: transform; contain: layout style; }
+        .gt-card:hover { transform: translateY(-3px); }
+        .gt-stat-card { animation: popIn 0.35s cubic-bezier(.16,1,.3,1) both; }
+        .gt-flame { display: inline-block; transform-origin: 50% 85%; animation: flameFlicker 1.6s ease-in-out infinite; }
+        .gt-flame-best { display: inline-block; transform-origin: 50% 85%; animation: flameBest 1s ease-in-out infinite; }
+
+        .gt-pip { transition: transform 0.15s ease, filter 0.15s ease; }
+        .gt-pip:hover { transform: translateY(-1px); filter: brightness(1.2); }
+        .gt-pip:active { transform: translateY(0) scale(0.94); }
+
+        .gt-watch-btn { transition: transform 0.15s ease, filter 0.15s ease, box-shadow 0.15s ease; }
+        .gt-watch-btn:hover { transform: translateY(-2px); filter: brightness(1.15); }
+
+        .gt-btn { transition: filter 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease; }
         .gt-btn:hover { filter: brightness(1.15); transform: translateY(-1px); }
-        .gt-btn:active { transform: translateY(0); }
+        .gt-btn:active { transform: translateY(0); filter: brightness(1.05); }
+
         .gt-chip { transition: all 0.15s ease; }
-        .gt-tab { transition: all 0.2s ease; }
+        .gt-tab { transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease; }
+        .gt-tab:hover { transform: translateY(-2px); }
         .gt-fadeup { animation: fadeUp 0.4s ease; }
+
         .gt-scope input::placeholder { color: rgba(255,255,255,0.3); }
-        .gt-scope input:focus { outline: none; border-color: rgba(255,255,255,0.35) !important; }
-        .gt-scope button:focus-visible { outline: 2px solid #64d9ea; outline-offset: 2px; }
+        .gt-scope input { transition: border-color 0.15s ease, background 0.15s ease; }
+        .gt-scope input:focus { outline: none; border-color: rgba(100,217,234,0.55) !important; background: rgba(255,255,255,0.06) !important; box-shadow: 0 0 0 3px rgba(100,217,234,0.12); }
+        .gt-scope button:focus-visible, .gt-scope a:focus-visible { outline: 2px solid #64d9ea; outline-offset: 2px; border-radius: 6px; }
         .gt-scope button, .gt-scope button * { font-family: "Inter", "Segoe UI", Arial, sans-serif !important; font-style: normal !important; font-weight: 600 !important; font-synthesis: none; -webkit-font-smoothing: antialiased; text-rendering: geometricPrecision; }
         .gt-date-trigger { min-width: 146px; display: inline-flex; align-items: center; justify-content: space-between; gap: 10px; }
+
+        /* Respect reduced-motion: kill decorative animation without
+           breaking layout or hiding functional state. */
+        @media (prefers-reduced-motion: reduce) {
+          *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; scroll-behavior: auto !important; }
+        }
+
         @media (max-width: 860px) { .gt-dual { grid-template-columns: 1fr !important; } }
         @media (max-width: 600px) {
           .gt-topbar { flex-direction: column; align-items: flex-start !important; }
@@ -754,14 +808,16 @@ function GrindTracker() {
           .gt-hero-row { flex-direction: column; align-items: stretch !important; }
           .gt-hero-media-btns { flex-direction: row !important; width: 100%; }
           .gt-watch-square { width: 100% !important; height: 72px !important; flex-direction: row !important; border-radius: 14px !important; }
+          .gt-resource-legend { gap: 7px !important; font-size: 9px !important; }
         }
       `}</style>
 
       <div className="gt-scope" style={{ position: "relative", zIndex: 1, maxWidth: 1180, margin: "0 auto", padding: "24px 20px 60px", fontFamily: "'Inter', sans-serif", color: "#f2f3f6" }}>
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12, marginBottom: 20 }} className="gt-topbar">
-          <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
             <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 20, letterSpacing: "-0.01em" }}>GRIND<span style={{ color: "#64d9ea" }}>.</span></div>
+            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "rgba(255,255,255,0.35)" }}>{fmtDate(TODAY, { weekday: "long", day: "2-digit", month: "long" })}</div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <button
@@ -847,7 +903,7 @@ function GrindTracker() {
           </GlassPanel>
         )}
 
-        <GlassPanel accentGlow={focusAccent.glow} style={{ padding: 26, marginBottom: 16 }}>
+        <GlassPanel variant="hero" accentGlow={focusAccent.glow} style={{ padding: 28, marginBottom: 16 }}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 8, marginBottom: 18 }}>
             <button className="gt-btn gt-nav-btn" title="Shortcut: Left Arrow" style={{ justifySelf: "start" }} disabled={selectedIndex <= 0} onClick={() => selectedIndex > 0 && setSelectedDate(PLAN.calendar[selectedIndex - 1].date)}>← Yesterday</button>
             <button className="gt-btn gt-nav-btn" title="Shortcut: T" onClick={() => setSelectedDate(PLAN.calendar.find(e => e.date === TODAY)?.date || PLAN.calendar[0].date)}>Today</button>
@@ -943,17 +999,32 @@ function GrindTracker() {
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 16 }} className="gt-stats">
           {[
-            { lbl: "Streak", val: streak.current, unit: "d", sub: `best: ${streak.longest}d` },
+            {
+              lbl: "Streak", val: streak.current, unit: "d",
+              sub: streak.longest > 0 ? `best: ${streak.longest}d` : "mark a day to start",
+              isStreak: true,
+              isBest: streak.current > 0 && streak.current === streak.longest,
+              glow: "rgba(255,158,87,0.5)",
+            },
             { lbl: "Pending", val: missedDays.length, unit: "d", sub: missedDays.length === 0 ? "clean run" : "needs catch-up", warn: missedDays.length > 0 },
             { lbl: "Overall", val: overallPct, unit: "%", sub: `${fmtDur(SUBJECTS.reduce((a, s) => a + subjectDoneMin(s), 0))} logged` },
             { lbl: "Days left", val: daysLeft, unit: "d", sub: "till 31 Dec" },
           ].map((s, i) => (
-            <GlassPanel key={i} style={{ padding: "16px 18px", borderRadius: 18 }}>
-              <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", color: "rgba(255,255,255,0.4)", fontFamily: "'JetBrains Mono', monospace", marginBottom: 8 }}>{s.lbl}</div>
-              <div style={{ fontSize: 26, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", letterSpacing: "-0.02em", color: s.warn ? "#ff8a8a" : (s.ok ? "#8ef0b6" : "#fff") }}>
+            <GlassPanel key={i} className="gt-card gt-stat-card" accentGlow={s.isStreak && s.val > 0 ? s.glow : undefined} style={{ padding: "16px 18px", borderRadius: 16 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", color: "rgba(255,255,255,0.4)", fontFamily: "'JetBrains Mono', monospace" }}>{s.lbl}</div>
+                {s.isStreak && s.val > 0 && (
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="#ff9e57" className={s.isBest ? "gt-flame-best" : "gt-flame"} style={{ filter: "drop-shadow(0 0 4px rgba(255,158,87,0.6))" }}>
+                    <path d="M12 2c1 3-2 4-2 7a3 3 0 006 0c1.5 1.5 2 3.5 2 5a6 6 0 11-12 0c0-3.5 2-5 3-7 .5-1 .8-2.5 1-5z" />
+                  </svg>
+                )}
+              </div>
+              <div style={{ fontSize: 26, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", letterSpacing: "-0.02em", color: s.warn ? "#ff8a8a" : (s.isStreak && s.val > 0 ? "#ffb37a" : "#fff") }}>
                 {s.val}<span style={{ fontSize: 14, color: "rgba(255,255,255,0.4)", fontWeight: 500 }}>{s.unit}</span>
               </div>
-              <div style={{ fontSize: 10.5, color: "rgba(255,255,255,0.4)", marginTop: 3 }}>{s.sub}</div>
+              <div style={{ fontSize: 10.5, color: s.isBest ? "#8ef0b6" : "rgba(255,255,255,0.4)", marginTop: 3, fontWeight: s.isBest ? 700 : 400 }}>
+                {s.isBest ? "🏆 personal best!" : s.sub}
+              </div>
             </GlassPanel>
           ))}
         </div>
@@ -986,7 +1057,7 @@ function GrindTracker() {
               }
               const isToday = entry.date === TODAY;
               return (
-                <button key={entry.date} className="gt-hm-cell" title={`${tip} · ${tipDetail}`} onClick={() => setSelectedDate(entry.date)}
+                <button key={entry.date} className="gt-hm-cell" title={`${tip} · ${tipDetail}`} aria-label={`${tip}: ${tipDetail}${isToday ? " (today)" : ""}`} onClick={() => setSelectedDate(entry.date)}
                   style={{ aspectRatio: "1", borderRadius: 5, background: bg, border, cursor: "pointer", boxShadow: isToday ? "0 0 0 2px #fff inset" : (extra.boxShadow || "none"), opacity: extra.opacity || 1, padding: 0, minWidth: 0 }} />
               );
             })}
@@ -995,7 +1066,12 @@ function GrindTracker() {
 
         <div style={{ display: "grid", gridTemplateColumns: "1.3fr 1fr", gap: 16, marginBottom: 16 }} className="gt-dual">
           <GlassPanel style={{ padding: 22 }}>
-            <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 15, fontWeight: 600, marginBottom: 16 }}>Subject Race</div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
+              <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 15, fontWeight: 600 }}>Subject Race</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: "rgba(255,255,255,0.35)" }}>
+                <span style={{ width: 3, height: 11, background: "#fff", borderRadius: 2, display: "inline-block" }} /> expected pace today
+              </div>
+            </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               {SUBJECTS.map(subj => {
                 const pct = racePct(subj), exp = expectedPct(subj);
@@ -1010,7 +1086,7 @@ function GrindTracker() {
                     <div style={{ fontSize: 12.5, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", display: "flex", alignItems: "center", gap: 7, color: a.c }}>
                       <Icon width={12} height={12} /> {subj}
                     </div>
-                    <div style={{ height: 10, background: "rgba(0,0,0,0.25)", borderRadius: 6, position: "relative", overflow: "hidden", border: "1px solid rgba(255,255,255,0.06)" }}>
+                    <div title={`You: ${Math.round(pct * 100)}% · Expected by today: ${Math.round(exp * 100)}%`} style={{ height: 10, background: "rgba(0,0,0,0.25)", borderRadius: 6, position: "relative", overflow: "hidden", border: "1px solid rgba(255,255,255,0.06)" }}>
                       <div style={{ height: "100%", width: `${(pct * 100).toFixed(1)}%`, borderRadius: 6, background: `linear-gradient(90deg, ${a.c}99, ${a.c})`, transition: "width 0.6s cubic-bezier(.16,1,.3,1)", boxShadow: `0 0 10px ${a.glow}` }} />
                       <div style={{ position: "absolute", top: -3, left: `${(exp * 100).toFixed(1)}%`, width: 3, height: 16, background: "#fff", borderRadius: 2, boxShadow: "0 0 4px rgba(0,0,0,0.5)" }} />
                     </div>
@@ -1048,7 +1124,14 @@ function GrindTracker() {
         </div>
 
         <GlassPanel id="gt-wall" style={{ padding: 22, marginBottom: 16 }}>
-          <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 15, fontWeight: 600, marginBottom: 16 }}>Progress Wall</div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
+            <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 15, fontWeight: 600 }}>Progress Wall</div>
+            <div className="gt-resource-legend" style={{ display: "flex", gap: 10, flexWrap: "wrap", fontSize: 9.5, fontFamily: "'JetBrains Mono', monospace", color: "rgba(255,255,255,0.35)" }}>
+              {RESOURCE_TYPES.map(rt => (
+                <span key={rt.key}><b style={{ color: "rgba(255,255,255,0.55)" }}>{rt.short}</b> {rt.label}</span>
+              ))}
+            </div>
+          </div>
 
           <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
             {SUBJECTS.map(subj => {
@@ -1092,11 +1175,30 @@ function GrindTracker() {
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 12 }}>
-            {PLAN.subjects[activeTab].map((c, idx) => {
-              if (search && !c.name.toLowerCase().includes(search.toLowerCase())) return null;
+            {(() => {
+              const chapters = PLAN.subjects[activeTab].filter(c => {
+                if (search && !c.name.toLowerCase().includes(search.toLowerCase())) return false;
+                const complete = isChapterComplete(activeTab, c.name);
+                if (filter === "complete" && !complete) return false;
+                if (filter === "incomplete" && complete) return false;
+                return true;
+              });
+              if (chapters.length === 0) {
+                return (
+                  <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "36px 20px", color: "rgba(255,255,255,0.4)" }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.6)", marginBottom: 6 }}>
+                      {search ? `No chapters match "${search}"` : `No ${filter} chapters in ${activeTab}`}
+                    </div>
+                    <div style={{ fontSize: 12 }}>
+                      {search ? "Try a different search term, or " : "Try "}
+                      <button onClick={() => { setSearch(""); setFilter("all"); }} style={{ background: "none", border: "none", color: "#64d9ea", cursor: "pointer", fontSize: 12, fontWeight: 600, padding: 0, textDecoration: "underline" }}>clear filters</button>.
+                    </div>
+                  </div>
+                );
+              }
+              return chapters.map((c) => {
+              const idx = PLAN.subjects[activeTab].indexOf(c);
               const complete = isChapterComplete(activeTab, c.name);
-              if (filter === "complete" && !complete) return null;
-              if (filter === "incomplete" && complete) return null;
               const progress = chapterProgress(activeTab, c.name);
               const a = ACCENT[SKEY[activeTab]];
               const res = state.resources[chapKey(activeTab, c.name)] || {};
@@ -1139,6 +1241,7 @@ function GrindTracker() {
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 5 }}>
                     {RESOURCE_TYPES.map(rt => (
                       <button key={rt.key} className="gt-pip" onClick={() => toggleResource(activeTab, c.name, rt.key)} title={rt.label}
+                        aria-label={`${rt.label} for ${c.name}${res[rt.key] ? ", done" : ", not done"}`} aria-pressed={!!res[rt.key]}
                         style={{ aspectRatio: "1", borderRadius: 8, fontSize: 8.5, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
                           border: res[rt.key] ? "1px solid transparent" : "1px solid rgba(255,255,255,0.1)",
                           background: res[rt.key] ? a.c : "rgba(0,0,0,0.2)",
@@ -1156,7 +1259,8 @@ function GrindTracker() {
                   </div>
                 </div>
               );
-            })}
+              });
+            })()}
           </div>
         </GlassPanel>
 
@@ -1170,8 +1274,8 @@ function GrindTracker() {
 
 const styles = {
   root: { position: "relative", minHeight: "100vh", background: "#06070a", overflow: "hidden" },
-  mesh: { position: "fixed", inset: 0, zIndex: 0, overflow: "hidden" },
-  blob: { position: "absolute", width: "45vw", height: "45vw", minWidth: 400, minHeight: 400, borderRadius: "50%", filter: "blur(120px)", opacity: 0.18, animation: "drift 24s ease-in-out infinite" },
+  mesh: { position: "fixed", inset: 0, zIndex: 0, overflow: "hidden", contain: "strict" },
+  blob: { position: "absolute", width: "45vw", height: "45vw", minWidth: 400, minHeight: 400, borderRadius: "50%", filter: "blur(120px)", opacity: 0.18, animation: "drift 24s ease-in-out infinite", willChange: "transform" },
 };
 
 function Root() {
@@ -1182,7 +1286,7 @@ function Root() {
   const [entranceDone, setEntranceDone] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => setEntranceDone(true), 1000);
+    const timer = setTimeout(() => setEntranceDone(true), 650);
     return () => clearTimeout(timer);
   }, []);
 
