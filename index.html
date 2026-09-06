@@ -285,17 +285,28 @@ const LS_SYNC_CODE_KEY = "grind_tracker_sync_code_v1";
 // Calculate the highest streak directly from the persisted date-wise completion data.
 // This is never hard-coded, so new accounts always start from their real data.
 function calculateBestStreak(doneDays) {
-  const datedStudyDays = PLAN.calendar
-    .filter(e => e.type === "study" && e.date <= TODAY)
-    .sort((a, b) => a.date.localeCompare(b.date));
-  let run = 0, best = 0;
-  for (const entry of datedStudyDays) {
-    if (doneDays && doneDays[entry.date] === true) {
-      run++;
-      best = Math.max(best, run);
-    } else {
-      run = 0;
-    }
+  // STREAK IS DATE-WISE AND COUNTS ANY COMPLETED CALENDAR DATE.
+  // Study days, rest days, and buffer days can all count if completed.
+  // Multiple lectures on the same date still count as only ONE streak day.
+  // Future completed dates do not count until that calendar date arrives.
+  const dates = [...new Set(
+    PLAN.calendar
+      .filter(e => e.date <= TODAY && doneDays && doneDays[e.date] === true)
+      .map(e => e.date)
+  )].sort();
+
+  let best = 0;
+  let run = 0;
+  let previousDate = null;
+
+  for (const date of dates) {
+    const day = new Date(date + "T12:00:00");
+    const isConsecutive = previousDate &&
+      (day.getTime() - previousDate.getTime() === 24 * 60 * 60 * 1000);
+
+    run = isConsecutive ? run + 1 : 1;
+    best = Math.max(best, run);
+    previousDate = day;
   }
   return best;
 }
@@ -643,39 +654,51 @@ function GrindTracker() {
   }, [selectedIndex]);
 
   const streak = useMemo(() => {
-    // DATE-WISE: only the exact scheduled date matters. Lecture/chapter
-    // continuity is never used. Rest/buffer dates are ignored.
-    const datedStudyDays = studyDays
-      .filter(e => e.date <= TODAY)
-      .sort((a, b) => a.date.localeCompare(b.date));
+  // DATE-WISE STREAK:
+  // Every completed calendar date counts, including REST and BUFFER days.
+  // Each date contributes MAXIMUM 1 streak day, regardless of lecture count.
+  // Future dates never count before their actual date.
+  const completedDates = [...new Set(
+    PLAN.calendar
+      .filter(e => e.date <= TODAY && state.doneDays[e.date] === true)
+      .map(e => e.date)
+  )].sort();
 
-    let run = 0;
-    let longest = 0;
-    for (const entry of datedStudyDays) {
-      if (state.doneDays[entry.date] === true) {
-        run++;
-        longest = Math.max(longest, run);
+  let longest = 0;
+  let run = 0;
+  let previousDate = null;
+
+  for (const date of completedDates) {
+    const day = new Date(date + "T12:00:00");
+    const consecutive = previousDate &&
+      (day.getTime() - previousDate.getTime() === 24 * 60 * 60 * 1000);
+    run = consecutive ? run + 1 : 1;
+    longest = Math.max(longest, run);
+    previousDate = day;
+  }
+
+  // Current streak is the consecutive completed-date run ending TODAY.
+  // TODAY counts even when TODAY is a rest/buffer day, as long as it is marked done.
+  let current = 0;
+  if (state.doneDays[TODAY] === true) {
+    current = 1;
+    let cursor = new Date(TODAY + "T12:00:00");
+    for (let i = completedDates.length - 2; i >= 0; i--) {
+      const d = new Date(completedDates[i] + "T12:00:00");
+      if (cursor.getTime() - d.getTime() === 24 * 60 * 60 * 1000) {
+        current++;
+        cursor = d;
       } else {
-        run = 0;
+        break;
       }
     }
+  }
 
-    // Current streak exists only when TODAY itself is a completed study day.
-    let current = 0;
-    const todayEntry = PLAN.calendar.find(e => e.date === TODAY);
-    if (todayEntry && todayEntry.type === "study" && state.doneDays[TODAY] === true) {
-      current = 1;
-      for (let i = datedStudyDays.length - 2; i >= 0; i--) {
-        if (state.doneDays[datedStudyDays[i].date] === true) current++;
-        else break;
-      }
-    }
-
-    return {
-      current,
-      longest: Math.max(Number(state.bestStreak) || 0, longest, current)
-    };
-  }, [studyDays, state.doneDays, state.bestStreak]);
+  return {
+    current,
+    longest: Math.max(Number(state.bestStreak) || 0, longest)
+  };
+}, [state.doneDays, state.bestStreak]);
 
   const expectedPct = useCallback((subj) => {
     // Subject Race is session-based: every lecture scheduled for today or
