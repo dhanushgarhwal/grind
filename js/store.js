@@ -6,7 +6,8 @@ const esc=s=>String(s??'').replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const uid=()=> 'n'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 const mk=(s,o,n,L,D)=>({id:uid(),s,o,n,L,D,l:arr(L,()=>0),d:arr(D,()=>0),c:0,p:0,t:''});
 const datePlus=(days)=>{const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()+days);return iso(d)};
-const fresh=()=>({m:{end:datePlus(30),q:2,off:[],od:[],more:{d:'',n:0},goal:10},ch:[],lg:{}});
+const catalog=()=>S.flatMap((group,si)=>group.map((x,o)=>mk(si,o,x[0],x[1],x[2])));
+const fresh=()=>({m:{end:datePlus(30),q:2,off:[],od:[],more:{d:'',n:0},goal:10},ch:catalog(),lg:{}});
 function norm(o){
   const f=fresh(); o=o&&typeof o==='object'?o:{};
   o.m={...f.m,...(o.m||{})}; o.m.off=Array.isArray(o.m.off)?o.m.off:[]; o.m.od=Array.isArray(o.m.od)?o.m.od:[]; o.m.more={...f.m.more,...(o.m.more||{})};
@@ -16,10 +17,10 @@ function norm(o){
   o.ch.forEach(c=>{while(c.l.length<c.L)c.l.push(0);while(c.d.length<c.D)c.d.push(0);if(c.l.length>c.L)c.l.length=c.L;if(c.d.length>c.D)c.d.length=c.D});
   o.lg=o.lg&&typeof o.lg==='object'?o.lg:{}; return o;
 }
-// Deliberately ignore all legacy localStorage keys. A new app version starts empty.
+// Fresh catalog release: remove all previous app state once, then initialize the full syllabus at zero.
 localStorage.removeItem('grind1');localStorage.removeItem('grind2');localStorage.removeItem('grind3');localStorage.removeItem('grind');
+localStorage.removeItem(K);
 let st=fresh();
-try{const saved=JSON.parse(localStorage.getItem(K)||'null');if(saved?.ch&&Array.isArray(saved.ch))st=norm(saved)}catch{}
 let key=localStorage.getItem(KEY);if(!key){key=[...crypto.getRandomValues(new Uint8Array(12))].map(x=>x.toString(36).padStart(2,'0')).join('');localStorage.setItem(KEY,key)}
 const local=()=>{try{localStorage.setItem(K,JSON.stringify(st))}catch{}};
 const C=id=>st.ch.find(c=>c.id===id), sub=si=>st.ch.filter(c=>c.s===si).sort((a,b)=>a.o-b.o);
