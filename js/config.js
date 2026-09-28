@@ -1,0 +1,1 @@
+const CFG={apiKey:"AIzaSyCrPxMhX_I0Doo4nvG1fCNrW81QaoB6_ik",authDomain:"dhanushgrind.firebaseapp.com",projectId:"dhanushgrind",storageBucket:"dhanushgrind.firebasestorage.app",messagingSenderId:"873232736996",appId:"1:873232736996:web:3e7a27416d4f9f1b77c2f1"};
