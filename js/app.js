@@ -31,7 +31,7 @@ const act={
 function R(){const o=document.querySelector('.db'),top=o?o.scrollTop:0;$('side').innerHTML=vSide();$('main').innerHTML=[vToday,vChapters,vPlan,vStats,vSettings][ui.tab]();
 if(ui.m&&ui.m.t==='ch'&&!C(ui.m.id))ui.m=null;$('ov').innerHTML=!ui.m?'':ui.m.t==='ch'?vDrawer(C(ui.m.id)):ui.m.t==='add'?vAdd():vLink();
 document.body.classList.toggle('lock',!!ui.m);const n=document.querySelector('.db');if(n)n.scrollTop=top;if(ui.m&&ui.m.t!=='ch'){const f=$(ui.m.t==='add'?'an':'lk');f&&f.focus()}}
-document.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b)return;const a=b.dataset.a;if(a==='noop')return;act[a](b.dataset);local();R()});
+document.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b)return;const a=b.dataset.a;if(a==='noop')return;e.preventDefault();e.stopPropagation();if(!act[a])return;act[a](b.dataset);local();R()});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&ui.m){ui.m=null;R()}else if(e.key==='Enter'&&e.target.classList.contains('cd'))e.target.click()});
 document.addEventListener('input',e=>{if(e.target.id==='qs'){ui.q=e.target.value;$('grid').innerHTML=cards()}});
 document.addEventListener('change',e=>{const t=e.target;

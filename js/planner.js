@@ -11,6 +11,6 @@ const rest=ds.slice(i0),cp=caps(M.length,rest.length,st.m.q);
 rest.forEach((d,i)=>out.push({d,it:take(M,cp[i]||0,new Set())}));
 return{out,dT,ds,left:M.length}}
 function stats(){let L=0,a=0,Dn=0,b=0;st.ch.forEach(c=>{L+=c.L;a+=done(c);Dn+=c.D;b+=dpp(c)});return{L,a,D:Dn,b}}
-function status(p){const N=p.left,n=p.ds.length,q=st.m.q;if(!N)return['All done','ok'];if(n<=0)return['Past deadline','bad'];
+function status(p){const N=p.left,n=p.ds.length,q=st.m.q;if(!st.ch.length)return['Ready','ok'];if(!N)return['All done','ok'];if(n<=0)return['Past deadline','bad'];
 if(N>q*n)return N/n>q+1?['Behind','bad']:['Stretch +'+(N-q*n),'wa'];
 const last=p.out.reduce((a,x,i)=>x.it.length?i:a,0),e=n-1-last;return e>=1?['Ahead '+e+'d','ok']:['On track','ok']}
